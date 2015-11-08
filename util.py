@@ -40,17 +40,34 @@ def parseIgnoredWords(path):
 def extractWordFeatures(lines, ignoredWords):
     frequencies = {}
     for line in lines:
+        line = line.lower()
         split = line.split(" ")
         for word in split:
-            word = word.lower()
             if ignoredWords is None or (word not in ignoredWords):
                 if frequencies.get(word) is None:
                     frequencies[word] = 0
                 frequencies[word] += 1
     return frequencies
 
-def extractBigramFeatures(lines):
+            
+def extractNGramFeatures(lines, n):
+    if n > 6 or n < 1: return
     
+    frequencies = {}
+    for line in lines:
+        line = line.lower()
+        split = line.split()
+        for i in range(len(split) - (n - 1)):
+            gram = ""
+            for j in range(n):
+                word = split[i + j]
+                gram += (word + " ")
+            gram = gram[:-1]
+            
+            if frequencies.get(gram) is None:
+                frequencies[gram] = 0
+            frequencies[gram] += 1
+    return frequencies
     
 def readExamples(path, genre, ignoredWords):
     '''
@@ -60,10 +77,6 @@ def readExamples(path, genre, ignoredWords):
     @param path: file path: 
     @param genre: the key of the dictionary with the 
     '''
-    genreDict = {}
-    frequencies = {}
-    sigFreq = {}
-    
     lines = []
     for line in open(path):
         lines.append(line)
@@ -72,7 +85,17 @@ def readExamples(path, genre, ignoredWords):
     frequencies = extractWordFeatures(lines, None)
     sigFreq = extractWordFeatures(lines, ignoredWords)
     
+    # bigrams
+    bigramFreq = extractNGramFeatures(lines, 2)
     
+    #trigrams
+    trigramFreq = extractNGramFeatures(lines, 3)
+    
+    #4-grams
+    fourGramFreq = extractNGramFeatures(lines, 4)
+    
+    ###############################################
+    ## methods
     examples = []
     for k,v in frequencies.iteritems():
         examples.append((k,v))
@@ -81,10 +104,38 @@ def readExamples(path, genre, ignoredWords):
     for k,v in sigFreq.iteritems():
         sigExamples.append((k,v))
         
+    bigrams = []
+    for k,v in bigramFreq.iteritems():
+        bigrams.append((k,v))
+        
+    trigrams = []
+    for k,v in trigramFreq.iteritems():
+        trigrams.append((k,v))
+    
+    fourGrams = []
+    for k,v in fourGramFreq.iteritems():
+        fourGrams.append((k,v))
+        
     examples.sort(key = lambda x: x[1])
     sigExamples.sort(key = lambda x: x[1])
+    bigrams.sort(key = lambda x:x[1])
+    trigrams.sort(key = lambda x:x[1])
+    fourGrams.sort(key = lambda x:x[1])
     
     #print examples
-    genreDict[genre] = examples
+    #print sigExamples
+    #print bigrams
+    #print trigrams
+    print fourGrams
+    
+    genreDict = {}
+    infoDict = {}
+    infoDict["sortedUnigramCounts"] = examples
+    infoDict["sortedSignificantCounts"] = sigExamples
+    infoDict["sortedBigramCounts"] = bigrams
+    infoDict["sortedTrigramCounts"] = trigrams
+    infoDict["sortedFourgramCounts"] = fourGrams
+    genreDict[genre] = infoDict
+    
     return genreDict
     
