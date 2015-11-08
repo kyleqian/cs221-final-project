@@ -1,5 +1,5 @@
 import os
-import pronouncing
+#import pronouncing
 #########################################################################
 # helper functions
 
@@ -24,8 +24,8 @@ def increment(d1, scale, d2):
     for f, v in d2.items():
         d1[f] = d1.get(f, 0) + v * scale
         
-def findRhymes(word):
-    return pronouncing.rhymes(word)
+#def findRhymes(word):
+#    return pronouncing.rhymes(word)
         
 ###############################################################################
 # parsers
@@ -50,6 +50,7 @@ def extractWordFeatures(lines, ignoredWords):
                 frequencies[word] += 1
     return frequencies
 
+
             
 def extractNGramFeatures(lines, n):
     if n > 6 or n < 1: return
@@ -70,6 +71,17 @@ def extractNGramFeatures(lines, n):
             frequencies[gram] += 1
     return frequencies
     
+def extractSentenceLengthFeatures(lines):
+    frequencies = {}
+    for line in lines:
+        length = len(line.split()) 
+        if length not in frequencies:
+            frequencies[length] = 1
+        else:
+            frequencies[length]+=1
+    return frequencies
+
+
 def readExamples(path, genre, ignoredWords):
     '''
     Reads a set of training examples.
@@ -94,6 +106,8 @@ def readExamples(path, genre, ignoredWords):
     
     #4-grams
     fourGramFreq = extractNGramFeatures(lines, 4)
+
+    lengthFrequencies = extractSentenceLengthFeatures(lines)
     
     ###############################################
     ## methods
@@ -127,7 +141,8 @@ def readExamples(path, genre, ignoredWords):
     #print sigExamples
     #print bigrams
     #print trigrams
-    print fourGrams
+    #print fourGrams
+    #print lengthFrequencies
     
     genreDict = {}
     infoDict = {}
@@ -139,4 +154,5 @@ def readExamples(path, genre, ignoredWords):
     genreDict[genre] = infoDict
     
     return genreDict
-    
+
+#readExamples("country.txt","country",[])
