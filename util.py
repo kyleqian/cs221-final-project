@@ -1,6 +1,6 @@
 import os
-
-
+import pronouncing
+import re
 #########################################################################
 # helper functions
 
@@ -25,6 +25,21 @@ def increment(d1, scale, d2):
     for f, v in d2.items():
         d1[f] = d1.get(f, 0) + v * scale
         
+def findRhymes(word):
+   return pronouncing.rhymes(word)
+
+def syllable_count(word):
+  """Uses an ad-hoc approach for counting syllables in a word"""
+  # Count the vowels in the word
+  # Subtract one vowel from every dipthong
+  count = len(re.findall(r'([aeiouyAEIOUY]+)', word))
+  # Subtract any silent vowels
+  if len(word) > 2:
+    if word[-1] == 'e' and  \
+       not is_vowel(word[-2]) and \
+       is_vowel(word[-3]):
+      count = count - 1
+  return count
         
 ###############################################################################
 # parsers
@@ -40,18 +55,47 @@ def parseIgnoredWords(path):
 def extractWordFeatures(lines, ignoredWords):
     frequencies = {}
     for line in lines:
+        line = line.lower()
         split = line.split(" ")
         for word in split:
-            word = word.lower()
             if ignoredWords is None or (word not in ignoredWords):
                 if frequencies.get(word) is None:
                     frequencies[word] = 0
                 frequencies[word] += 1
     return frequencies
 
-def extractBigramFeatures(lines):
+
+            
+def extractNGramFeatures(lines, n):
+    if n > 6 or n < 1: return
     
+    frequencies = {}
+    for line in lines:
+        line = line.lower()
+        split = line.split()
+        for i in range(len(split) - (n - 1)):
+            gram = ""
+            for j in range(n):
+                word = split[i + j]
+                gram += (word + " ")
+            gram = gram[:-1]
+            
+            if frequencies.get(gram) is None:
+                frequencies[gram] = 0
+            frequencies[gram] += 1
+    return frequencies
     
+def extractSentenceLengthFeatures(lines):
+    frequencies = {}
+    for line in lines:
+        length = len(line.split()) 
+        if length not in frequencies:
+            frequencies[length] = 1
+        else:
+            frequencies[length]+=1
+    return frequencies
+
+
 def readExamples(path, genre, ignoredWords):
     '''
     Reads a set of training examples.
@@ -60,10 +104,6 @@ def readExamples(path, genre, ignoredWords):
     @param path: file path: 
     @param genre: the key of the dictionary with the 
     '''
-    genreDict = {}
-    frequencies = {}
-    sigFreq = {}
-    
     lines = []
     for line in open(path):
         lines.append(line)
@@ -72,7 +112,19 @@ def readExamples(path, genre, ignoredWords):
     frequencies = extractWordFeatures(lines, None)
     sigFreq = extractWordFeatures(lines, ignoredWords)
     
+    # bigrams
+    bigramFreq = extractNGramFeatures(lines, 2)
     
+    #trigrams
+    trigramFreq = extractNGramFeatures(lines, 3)
+    
+    #4-grams
+    fourGramFreq = extractNGramFeatures(lines, 4)
+
+    lengthFrequencies = extractSentenceLengthFeatures(lines)
+    
+    ###############################################
+    ## methods
     examples = []
     for k,v in frequencies.iteritems():
         examples.append((k,v))
@@ -81,10 +133,40 @@ def readExamples(path, genre, ignoredWords):
     for k,v in sigFreq.iteritems():
         sigExamples.append((k,v))
         
+    bigrams = []
+    for k,v in bigramFreq.iteritems():
+        bigrams.append((k,v))
+        
+    trigrams = []
+    for k,v in trigramFreq.iteritems():
+        trigrams.append((k,v))
+    
+    fourGrams = []
+    for k,v in fourGramFreq.iteritems():
+        fourGrams.append((k,v))
+        
     examples.sort(key = lambda x: x[1])
     sigExamples.sort(key = lambda x: x[1])
+    bigrams.sort(key = lambda x:x[1])
+    trigrams.sort(key = lambda x:x[1])
+    fourGrams.sort(key = lambda x:x[1])
     
     #print examples
-    genreDict[genre] = examples
-    return genreDict
+    #print sigExamples
+    #print bigrams
+    #print trigrams
+    #print fourGrams
+    #print lengthFrequencies
     
+    genreDict = {}
+    infoDict = {}
+    infoDict["sortedUnigramCounts"] = examples
+    infoDict["sortedSignificantCounts"] = sigExamples
+    infoDict["sortedBigramCounts"] = bigrams
+    infoDict["sortedTrigramCounts"] = trigrams
+    infoDict["sortedFourgramCounts"] = fourGrams
+    genreDict[genre] = infoDict
+    
+    return genreDict
+
+#readExamples("country.txt","country",[])
