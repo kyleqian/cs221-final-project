@@ -1,6 +1,10 @@
 import os
 import pronouncing
 import re
+import nltk
+import json
+from pprint import pprint
+
 #########################################################################
 # helper functions
 
@@ -105,8 +109,14 @@ def readExamples(path, genre, ignoredWords):
     @param genre: the key of the dictionary with the 
     '''
     lines = []
-    for line in open(path):
-        lines.append(line)
+    with open('lyrics.json') as data_file:
+        data = json.load(data_file)
+    
+    nestedArr = data[genre]    
+    for song in nestedArr:
+        for line in song:
+            lines.append(line)
+        
     
     # unigrams
     frequencies = extractWordFeatures(lines, None)
@@ -152,7 +162,7 @@ def readExamples(path, genre, ignoredWords):
     fourGrams.sort(key = lambda x:x[1])
     
     #print examples
-    #print sigExamples
+    print sigExamples
     #print bigrams
     #print trigrams
     #print fourGrams
@@ -168,5 +178,3 @@ def readExamples(path, genre, ignoredWords):
     genreDict[genre] = infoDict
     
     return genreDict
-
-#readExamples("country.txt","country",[])
