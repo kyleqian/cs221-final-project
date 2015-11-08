@@ -1,6 +1,5 @@
 import os
-
-
+import pronouncing
 #########################################################################
 # helper functions
 
@@ -25,6 +24,8 @@ def increment(d1, scale, d2):
     for f, v in d2.items():
         d1[f] = d1.get(f, 0) + v * scale
         
+def findRhymes(word):
+    return pronouncing.rhymes(word)
         
 ###############################################################################
 # parsers
