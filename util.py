@@ -44,7 +44,7 @@ def syllable_count(word):
        is_vowel(word[-3]):
       count = count - 1
   return count
-        
+
 ###############################################################################
 # parsers
 
@@ -162,7 +162,7 @@ def readExamples(path, genre, ignoredWords):
     fourGrams.sort(key = lambda x:x[1])
     
     #print examples
-    print sigExamples
+    #print sigExamples
     #print bigrams
     #print trigrams
     #print fourGrams
