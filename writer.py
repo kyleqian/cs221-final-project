@@ -5,7 +5,7 @@ class SongState():
 	def __init__(self, genre):
 		self.genre = genre
 		self.max_lines = util.generateNumSongLines(self.genre)
-		self.max_words_per_line = util.generateMaxWordsInLine(self.genre) # TODO
+		self.max_words_per_line = util.generateMaxWordsInLine(self.genre)
 		self.lyrics = [[] for _ in xrange(self.max_lines)]
 		self.current_line = []
 		self.current_line_number = 0

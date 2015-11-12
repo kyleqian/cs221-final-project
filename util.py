@@ -165,6 +165,27 @@ def extractSyllableFeatures(lines):
             frequencies[numSyllables]=1
     #print frequencies
     return frequencies
+
+
+def getGramDict(genre):
+    lines = []
+    with open('lyrics.json') as data_file:
+        data = json.load(data_file)
+    nestedArr = data[genre]    
+    for song in nestedArr:
+        for line in song:
+            lines.append(line)
+    gramFreq = extractNGramFeatures(lines,2)
+    wordMapping = {}
+    for k,v in gramFreq.iteritems():
+        key = k.split()[0]
+        if key in wordMapping:
+            wordMapping[key].append(k.split()[1])
+        else:
+            wordMapping[key] = [k.split()[1]]
+    return wordMapping
+
+getGramDict(2,"country")
 def readExamples(genre, ignoredWords=None):
     '''
     Reads a set of training examples.
