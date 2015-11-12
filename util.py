@@ -55,7 +55,7 @@ def parseIgnoredWords(path):
         ignoredWords.append(line.strip())
     return ignoredWords
     
-    
+
 def extractWordFeatures(lines, ignoredWords):
     frequencies = {}
     for line in lines:
@@ -106,7 +106,18 @@ def extractSentenceLengthFeatures(lines):
             frequencies[length]+=1
     return frequencies
 
-
+def extractSyllableFeatures(lines):
+    frequencies = {}
+    for line in lines:
+        numSyllables = 0
+        for word in line:
+            numSyllables+=syllable_count(word)
+        if numSyllables in frequencies:
+            frequencies[numSyllables]+=1
+        else:
+            frequencies[numSyllables]=1
+    print frequencies
+    return frequencies
 def readExamples(genre, ignoredWords=None, path=None):
     '''
     Reads a set of training examples.
@@ -124,9 +135,15 @@ def readExamples(genre, ignoredWords=None, path=None):
         for line in song:
             lines.append(line)
         
+    #number of lines in each song
     songNumLineFeatures = extractNumLineFeatures(data[genre])
+    
+    #number of syllables in a line
+    syllableFeatures = extractSyllableFeatures(lines)
+
     # unigrams
     frequencies = extractWordFeatures(lines, None)
+
     sigFreq = extractWordFeatures(lines, ignoredWords)
     
     # bigrams
@@ -161,23 +178,35 @@ def readExamples(genre, ignoredWords=None, path=None):
     fourGrams = []
     for k,v in fourGramFreq.iteritems():
         fourGrams.append((k,v))
-        
+
+    numSongLines = []
+    for k,v in songNumLineFeatures.iteritems():
+        numSongLines.append((k,v))
+
+    syllables = []
+    for k,v in syllableFeatures
+        syllables.append((k,v))
+
     examples.sort(key = lambda x: x[1])
     sigExamples.sort(key = lambda x: x[1])
     bigrams.sort(key = lambda x:x[1])
     trigrams.sort(key = lambda x:x[1])
     fourGrams.sort(key = lambda x:x[1])
-    
+    songNumLineFeatures.sort(key = lambda x:x[1])
+    syllableFeatures.sort(key = lambda x:x[1])
+
+
     #print examples
     #print sigExamples
     #print bigrams
     #print trigrams
     #print fourGrams
     #print lengthFrequencies
-    
+
     genreDict = {}
     infoDict = {}
-    infoDict['songNumLineFeatures'] = songNumLineFeatures
+    infoDict["syllableFeatures"] = syllables
+    infoDict['songNumLineFeatures'] = numSongLines
     infoDict["sortedUnigramCounts"] = examples
     infoDict["sortedSignificantCounts"] = sigExamples
     infoDict["sortedBigramCounts"] = bigrams
@@ -187,4 +216,4 @@ def readExamples(genre, ignoredWords=None, path=None):
     
     return genreDict
 
-readExamples("country.txt","country",[])
+readExamples("country",[],"country.txt")
