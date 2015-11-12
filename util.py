@@ -9,6 +9,24 @@ import random
 #########################################################################
 # helper functions
 
+def weightedRandomChoice(weightDict):
+    weights = []
+    elems = []
+    for elem in weightDict:
+        weights.append(weightDict[elem])
+        elems.append(elem)
+    total = sum(weights)
+    key = random.uniform(0, total)
+    runningTotal = 0.0
+    chosenIndex = None
+    for i in range(len(weights)):
+        weight = weights[i]
+        runningTotal += weight
+        if runningTotal > key:
+            chosenIndex = i
+            return elems[chosenIndex]
+    raise Exception('Should not reach here')
+
 def dotProduct(d1, d2):
     """
     @param dict d1: a feature vector represented by a mapping from a feature (string) to a weight (float).
@@ -90,7 +108,7 @@ def generateNumSongLines(genre):
     print numLineValuesArray[random.randint(0,len(numLineValuesArray))]
     return numLineValuesArray[random.randint(0,len(numLineValuesArray))]
 
-generateNumSongLines('country')
+#generateNumSongLines('country')
             
 def extractNGramFeatures(lines, n):
     if n > 6 or n < 1: return
@@ -131,9 +149,9 @@ def extractSyllableFeatures(lines):
             frequencies[numSyllables]+=1
         else:
             frequencies[numSyllables]=1
-    print frequencies
+    #print frequencies
     return frequencies
-def readExamples(genre, ignoredWords=None, path=None):
+def readExamples(genre, ignoredWords=None):
     '''
     Reads a set of training examples.
     
@@ -220,6 +238,7 @@ def readExamples(genre, ignoredWords=None, path=None):
 
     genreDict = {}
     infoDict = {}
+    infoDict["unigrams"] = frequencies
     infoDict["syllableFeatures"] = syllables
     infoDict['songNumLineFeatures'] = numSongLines
     infoDict["sortedUnigramCounts"] = examples
@@ -230,3 +249,15 @@ def readExamples(genre, ignoredWords=None, path=None):
     genreDict[genre] = infoDict
     
     return genreDict
+    
+    
+def chooseRandomGram(genre_db, genre):
+    infoDict = genre_db[genre]
+    unigrams = infoDict["unigrams"] 
+    choice = weightedRandomChoice(unigrams)
+    return choice
+    
+    
+    
+    
+    

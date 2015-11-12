@@ -1,4 +1,4 @@
 import util
 
 ignoredWords = util.parseIgnoredWords("ignore.txt")
-genreDict = util.readExamples("country.txt", "country", ignoredWords)
+genreDict = util.readExamples("country", ignoredWords)
