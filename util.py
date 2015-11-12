@@ -4,6 +4,7 @@ import re
 #import nltk
 import json
 from pprint import pprint
+import random
 
 #########################################################################
 # helper functions
@@ -76,6 +77,20 @@ def extractNumLineFeatures(songs):
         else:
             frequencies[len(song)]=1
     return frequencies
+
+def generateNumSongLines(genre):
+    lines = []
+    with open('lyrics.json') as data_file:
+        data = json.load(data_file) 
+    numLineValues = extractNumLineFeatures(data[genre])
+    numLineValuesArray = []
+    for k,v in numLineValues.iteritems():
+        for i in range(0,v):
+            numLineValuesArray.append(k)
+    print numLineValuesArray[random.randint(0,len(numLineValuesArray))]
+    return numLineValuesArray[random.randint(0,len(numLineValuesArray))]
+
+generateNumSongLines('country')
             
 def extractNGramFeatures(lines, n):
     if n > 6 or n < 1: return
