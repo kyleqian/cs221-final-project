@@ -100,7 +100,7 @@ def extractSentenceLengthFeatures(lines):
     return frequencies
 
 
-def readExamples(path, genre, ignoredWords):
+def readExamples(genre, ignoredWords=None, path=None):
     '''
     Reads a set of training examples.
     
