@@ -184,7 +184,7 @@ def readExamples(genre, ignoredWords=None, path=None):
         numSongLines.append((k,v))
 
     syllables = []
-    for k,v in syllableFeatures
+    for k,v in syllableFeatures.iteritems():
         syllables.append((k,v))
 
     examples.sort(key = lambda x: x[1])
@@ -192,8 +192,8 @@ def readExamples(genre, ignoredWords=None, path=None):
     bigrams.sort(key = lambda x:x[1])
     trigrams.sort(key = lambda x:x[1])
     fourGrams.sort(key = lambda x:x[1])
-    songNumLineFeatures.sort(key = lambda x:x[1])
-    syllableFeatures.sort(key = lambda x:x[1])
+    numSongLines.sort(key = lambda x:x[1])
+    syllables.sort(key = lambda x:x[1])
 
 
     #print examples
