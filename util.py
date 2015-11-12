@@ -1,7 +1,7 @@
 import os
-import pronouncing
+#import pronouncing
 import re
-import nltk
+#import nltk
 import json
 from pprint import pprint
 
@@ -68,7 +68,14 @@ def extractWordFeatures(lines, ignoredWords):
                 frequencies[word] += 1
     return frequencies
 
-
+def extractNumLineFeatures(songs):
+    frequencies = {}
+    for song in songs:
+        if len(song) in frequencies:
+            frequencies[len(song)]+=1
+        else:
+            frequencies[len(song)]=1
+    return frequencies
             
 def extractNGramFeatures(lines, n):
     if n > 6 or n < 1: return
@@ -117,7 +124,7 @@ def readExamples(path, genre, ignoredWords):
         for line in song:
             lines.append(line)
         
-    
+    songNumLineFeatures = extractNumLineFeatures(data[genre])
     # unigrams
     frequencies = extractWordFeatures(lines, None)
     sigFreq = extractWordFeatures(lines, ignoredWords)
@@ -170,6 +177,7 @@ def readExamples(path, genre, ignoredWords):
     
     genreDict = {}
     infoDict = {}
+    infoDict['songNumLineFeatures'] = songNumLineFeatures
     infoDict["sortedUnigramCounts"] = examples
     infoDict["sortedSignificantCounts"] = sigExamples
     infoDict["sortedBigramCounts"] = bigrams
@@ -178,3 +186,5 @@ def readExamples(path, genre, ignoredWords):
     genreDict[genre] = infoDict
     
     return genreDict
+
+readExamples("country.txt","country",[])
