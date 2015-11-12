@@ -107,7 +107,6 @@ def generateNumSongLines(genre):
     randNum = random.randint(0,len(numLineValuesArray)-1)
     return numLineValuesArray[randNum]
 
-
             
 def extractNGramFeatures(lines, n):
     if n > 6 or n < 1: return
@@ -137,6 +136,22 @@ def extractSentenceLengthFeatures(lines):
         else:
             frequencies[length]+=1
     return frequencies
+
+def generateMaxWordsInLine(genre):
+    lines = []
+    with open('lyrics.json') as data_file:
+        data = json.load(data_file)
+    nestedArr = data[genre]    
+    for song in nestedArr:
+        for line in song:
+            lines.append(line)
+    sentenceLengths = extractSentenceLengthFeatures(lines)
+    lineLengthArray = []
+    for k,v in sentenceLengths.iteritems():
+        for i in range(0,v):
+            lineLengthArray.append(k)
+    randNum = random.randint(0,len(lineLengthArray)-1)
+    return lineLengthArray[randNum]
 
 def extractSyllableFeatures(lines):
     frequencies = {}
