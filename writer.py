@@ -4,7 +4,7 @@ import random
 class SongState():
 	def __init__(self, genre):
 		self.genre = genre
-		self.max_lines = 10 # TODO
+		self.max_lines = util.generateNumSongLines(self.genre)
 		self.max_words_per_line = 10 # TODO
 		self.lyrics = [[] for _ in xrange(self.max_lines)]
 		self.current_line = []
