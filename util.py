@@ -186,5 +186,3 @@ def readExamples(genre, ignoredWords=None, path=None):
     genreDict[genre] = infoDict
     
     return genreDict
-
-readExamples("country.txt","country",[])
