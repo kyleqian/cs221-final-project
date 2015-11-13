@@ -68,4 +68,4 @@ class Writer():
 w = Writer('country')
 ss = w.start_state()
 suc = w.succ_and_cost(ss)
-print suc
+print ss
