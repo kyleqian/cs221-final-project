@@ -9,6 +9,43 @@ import random
 #########################################################################
 # helper functions
 
+def eval(createSong):
+    pass
+# takes in a song, removes random words based on a ratio
+def createSong(genre, removalRatio):    
+    with open('lyrics.json') as data_file:
+        data = json.load(data_file)
+    
+    nestedArr = data[genre]    
+    if len(nestedArr) == 0:
+        return None
+    song = nestedArr[0]
+    
+    lines = []
+    numWords = 0
+    for line in song:
+        lineArr = []
+        words = line.split(" ")
+        numWords += len(words)
+        for word in words:
+            lineArr.append(word)
+        lines.append(lineArr)
+    
+    numRemovals = int(numWords * removalRatio)
+    indexes = []
+    for i in range(numRemovals):
+        while True:
+            lineChoice = random.choice([i for i in range(len(lines))])
+            lineChosen = lines[lineChoice]
+            wordChoice = random.choice([i for i in range(len(lineChosen))])
+            t = (lineChoice, wordChoice)
+            if t not in indexes and wordChoice != 0: # make sure to remove a different word every time and not remove the first word
+                lines[lineChoice][wordChoice] = "_"
+                indexes.append((lineChoice, wordChoice))
+                break   
+    #print lines
+    return lines
+
 def weightedRandomChoice(weightDict):
     weights = []
     elems = []
@@ -167,14 +204,7 @@ def extractSyllableFeatures(lines):
     return frequencies
 
 
-def getGramDict(genre):
-    lines = []
-    with open('lyrics.json') as data_file:
-        data = json.load(data_file)
-    nestedArr = data[genre]    
-    for song in nestedArr:
-        for line in song:
-            lines.append(line)
+def getGramDict(lines):
     gramFreq = extractNGramFeatures(lines,2)
     wordMapping = {}
     for k,v in gramFreq.iteritems():
@@ -272,7 +302,9 @@ def readExamples(genre, ignoredWords=None):
 
     genreDict = {}
     infoDict = {}
+    infoDict["lines"] = lines
     infoDict["unigrams"] = frequencies
+    infoDict["bigrams"] = bigramFreq
     infoDict["syllableFeatures"] = syllables
     infoDict['songNumLineFeatures'] = numSongLines
     infoDict["sortedUnigramCounts"] = examples
