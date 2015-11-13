@@ -185,7 +185,6 @@ def getGramDict(genre):
             wordMapping[key] = [k.split()[1]]
     return wordMapping
 
-getGramDict(2,"country")
 def readExamples(genre, ignoredWords=None):
     '''
     Reads a set of training examples.
