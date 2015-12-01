@@ -1,5 +1,5 @@
 import os
-#import pronouncing
+import pronouncing
 import re
 #import nltk
 import json
@@ -8,6 +8,20 @@ import random
 
 #########################################################################
 # helper functions
+
+"""
+Beginnings
+"""
+
+def extractSentenceBeginnings(lines):
+    begs = []
+    for line in lines:
+        begs.append(line.split(" ")[0])
+    return begs
+
+"""
+Eval: A function to evaluate how well our song writer writes a song
+"""
 
 def eval(createSong):
     pass
@@ -93,6 +107,7 @@ def syllable_count(word):
   # Count the vowels in the word
   # Subtract one vowel from every dipthong
   count = len(re.findall(r'([aeiouyAEIOUY]+)', word))
+  is_vowel = lambda w: w in ["a","e","i","o","u"]
   # Subtract any silent vowels
   if len(word) > 2:
     if word[-1] == 'e' and  \
@@ -203,7 +218,6 @@ def extractSyllableFeatures(lines):
     #print frequencies
     return frequencies
 
-
 def getGramDict(lines):
     gramFreq = extractNGramFeatures(lines,2)
     wordMapping = {}
@@ -253,6 +267,8 @@ def readExamples(genre, ignoredWords=None):
     fourGramFreq = extractNGramFeatures(lines, 4)
 
     lengthFrequencies = extractSentenceLengthFeatures(lines)
+
+    sentenceBeginnings = extractSentenceBeginnings(lines)
     
     ###############################################
     ## methods
@@ -305,6 +321,8 @@ def readExamples(genre, ignoredWords=None):
     infoDict["lines"] = lines
     infoDict["unigrams"] = frequencies
     infoDict["bigrams"] = bigramFreq
+    infoDict["trigrams"] = trigramFreq
+    infoDict["fourgrams"] = fourGramFreq
     infoDict["syllableFeatures"] = syllables
     infoDict['songNumLineFeatures'] = numSongLines
     infoDict["sortedUnigramCounts"] = examples
@@ -312,6 +330,8 @@ def readExamples(genre, ignoredWords=None):
     infoDict["sortedBigramCounts"] = bigrams
     infoDict["sortedTrigramCounts"] = trigrams
     infoDict["sortedFourgramCounts"] = fourGrams
+    infoDict["sentenceBeginnings"] = sentenceBeginnings
+
     genreDict[genre] = infoDict
     
     return genreDict
