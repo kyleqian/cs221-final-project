@@ -7,10 +7,10 @@ class SongState():
 	def __init__(self, genre):
 		self.genre = genre
 		#self.max_lines = util.generateNumSongLines(self.genre)
-		self.max_lines = 5
+		self.max_lines = 8
 		# self.max_words_per_line = util.generateMaxWordsInLine(self.genre) # TODO
 		#self.lyrics = [['_']*util.generateMaxWordsInLine(self.genre) for _ in xrange(self.max_lines)]
-		self.lyrics = [['_']*6 for _ in xrange(self.max_lines)]
+		self.lyrics = [['_']*8 for _ in xrange(self.max_lines)]
 		# numSyllablesInLine = util.syllable_count(word)
 		# rhymingWords = util.findRhymes(words)	
 
@@ -125,9 +125,13 @@ class SongWriter():
 
 	#cuts cost in half
 	def getValidSentenceCostDeduction(self,s,cost):
-		if self.tagger.sentenceEndingIsValid(s):
+		endings = self.genre_db[self.genre]["sentenceEnds"]
+		if s in endings:
 			return int(cost * 0.5)
 		return 0
+		# if self.tagger.sentenceEndingIsValid(s):
+		# 	return int(cost * 0.5)
+		# return 0
 
 	def getRhymeDeduction(self, w1,w2,cost):
 		rhymes1 = util.findRhymes(w1)
@@ -149,7 +153,7 @@ class SongWriter():
 			p, next_word = assignment[i]
 			lineCount = self.getNumSyllablesInWord(next_word) + self.getNumSyllablesInLine(state.lyrics[i])
 			sqdev += (abs(lineCount - averageSyllables))**2
-		print sqdev
+		#print sqdev
 		return cost * (cost / (cost + sqdev));
 
 
@@ -176,8 +180,13 @@ class SongWriter():
 
 	def getNumSyllablesInLine(self, l):
 		total = 0
-		for w in l:
-			total += self.getNumSyllablesInWord(w)
+		line = " ".join(l)
+		if line in self.syllableCache:
+			total = self.syllableCache[line]
+		else:
+			for w in l:
+				total += self.getNumSyllablesInWord(w)
+			self.syllableCache[line] = total
 		return total
 
 	def __calculate_cost(self, state, assignment):
@@ -198,6 +207,7 @@ class SongWriter():
 				fourGramCost = self.getFourGramCost(wordThreeAway, wordTwoAway, wordOneAway, next_word)
 				costs.append(fourGramCost)
 			currcost = min(costs)
+
 			if p == len(state.lyrics[i]) - 1: # end of the line
 				arr = state.lyrics[i][:-1] + [next_word]
 				s = " ".join(arr)
@@ -205,20 +215,20 @@ class SongWriter():
 				if  deduction is None:
 					deduction = self.getValidSentenceCostDeduction(s, currcost)
 					self.setCachedDeduction(s,deduction)
-				if deduction > 0:
-					print "%s" % (s)
+				# if deduction > 0:
+				# 	print "%s" % (s)
 				currcost -= deduction
 			
-			if i % 2 == 1 and p == len(state.lyrics[i]) - 1:
-				w1 = assignment[i][1]
-				w2 = assignment[i - 1][1]
-				rhymeDeduction = self.getCachedRhymeDeduction(w1,w2)
-				if rhymeDeduction is None:
-					rhymeDeduction = self.getRhymeDeduction(w1, w2, currcost)
-					self.setCachedRhymeDeduction(w1, w2, rhymeDeduction)
-				if rhymeDeduction > 0:
-					print "%s|%s" % (w1,w2)
-				currcost -= rhymeDeduction
+			# if i % 2 == 1 and p == len(state.lyrics[i]) - 1:
+			# 	w1 = assignment[i][1]
+			# 	w2 = assignment[i - 1][1]
+			# 	rhymeDeduction = self.getCachedRhymeDeduction(w1,w2)
+			# 	if rhymeDeduction is None:
+			# 		rhymeDeduction = self.getRhymeDeduction(w1, w2, currcost)
+			# 		self.setCachedRhymeDeduction(w1, w2, rhymeDeduction)
+			# 	if rhymeDeduction > 0:
+			# 		print "%s|%s" % (w1,w2)
+			# 	currcost -= rhymeDeduction
 
 			cost += currcost
 
@@ -251,9 +261,29 @@ class SongWriter():
 	An assignment = (lineNumber, [next_words])
 	"""	
 
+	def __get_possible_words2(self, state, line_number, line_position):
+		wordThreeAway = None
+		wordTwoAway = None
+		wordOneAway = None
+
+		line = state.lyrics[line_number]
+		if line_position >= 1:
+			wordOneAway = line[line_position - 1].lower()
+		if line_position >= 2:
+			wordTwoAway = line[line_position - 2].lower()
+		if line_position >= 3:
+			wordThreeAway = line[line_position - 3].lower()
+
+		possibleWords = util.getPossibleWords(self.genre_db[self.genre],wordThreeAway, wordTwoAway, wordOneAway)
+		if len(possibleWords) == 0:
+			gram  = util.chooseRandomGram(self.genre_db, self.genre)
+			return [gram]
+		else:
+			return possibleWords
+
 	def __get_possible_words(self, state, line_number, line_position):
 		prev_word = state.lyrics[line_number][line_position - 1].lower() #WHAT IF FIRST WORD
-		gram_dict = util.getGramDict(self.genre_db[self.genre]["lines"])
+		gram_dict = util.getGramDict(self.genre_db[self.genre])
 		if gram_dict.get(prev_word) is None:
 			gram = util.chooseRandomGram(self.genre_db, self.genre)
 			return [gram]
@@ -269,7 +299,7 @@ class SongWriter():
 			if linePos is None:
 				possibleWords = []
 			else:
-				possibleWords = self.__get_possible_words(state, lineNum, linePos)
+				possibleWords = self.__get_possible_words2(state, lineNum, linePos)
 			assignments.append((linePos, possibleWords))
 
 		combinations = self.getRandomCombinations(assignments)
@@ -350,7 +380,7 @@ class SongWriter():
 		assignments = self.__get_possible_assignments(state)
 		for assignment in assignments:
 			next_state = deepcopy(state)
-			for lineNum in range(len(state.lyrics)):
+			for lineNum in range(len(state.lyrics)): # assign next blank for each of the lines a new word
 				line_pos,next_word = assignment[lineNum]
 				next_state.lyrics[lineNum][line_pos] = next_word
 			cost = self.__calculate_cost(state, assignment)

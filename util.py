@@ -19,6 +19,12 @@ def extractSentenceBeginnings(lines):
         begs.append(line.split(" ")[0])
     return begs
 
+def extractSentenceEnds(lines):
+    ends = []
+    for line in lines:
+        ends.append(line.split(" ").pop())
+    return ends
+
 """
 Eval: A function to evaluate how well our song writer writes a song
 """
@@ -218,16 +224,54 @@ def extractSyllableFeatures(lines):
     #print frequencies
     return frequencies
 
-def getGramDict(lines):
-    gramFreq = extractNGramFeatures(lines,2)
-    wordMapping = {}
-    for k,v in gramFreq.iteritems():
+def getGramDict(infoDict):
+    gramFreq = infoDict["bigrams"]
+    return getWordMapping(gramFreq)
+
+def getWordMapping(grams):
+    mapping = {}
+    for k,v in grams.iteritems():
         key = k.split()[0]
-        if key in wordMapping:
-            wordMapping[key].append(k.split()[1])
+        if key in mapping:
+            mapping[key].append(k.split()[1])
         else:
-            wordMapping[key] = [k.split()[1]]
-    return wordMapping
+            mapping[key] = [k.split()[1]]
+    return mapping
+
+def getNGramDict(infoDict):
+    fourgrams = infoDict["fourgrams"]
+    trigrams = infoDict["trigrams"]
+    bigrams = infoDict["bigrams"]
+
+    mapping = getWordMapping(fourgrams)
+    mapping.update(getWordMapping(trigrams))
+    mapping.update(getWordMapping(bigrams))
+    return mapping
+
+def getPossibleWords(infoDict, wordThreeAway, wordTwoAway, wordOneAway):
+    wordMapping =  infoDict["mapping"]
+    if wordThreeAway is not None:
+        word = "%s %s %s" % (wordThreeAway, wordTwoAway, wordOneAway)
+        if wordMapping.get(word) is not None:
+            possibleWords = wordMapping[word]
+            words = [word for word in possibleWords]
+            return words
+    if wordTwoAway is not None:
+        word = "%s %s" % (wordTwoAway, wordOneAway)
+        #print "trigram word: " + word
+        if wordMapping.get(word) is not None:
+            possibleWords = wordMapping[word]
+            words = [word for word in possibleWords]
+            return words
+    if wordOneAway is not None:
+        word = wordOneAway
+        #print "bigram word: " + word
+        if wordMapping.get(word) is not None:
+            possibleWords = wordMapping[word]
+            words = [word for word in possibleWords]
+            return words
+    return []
+
 
 def readExamples(genre, ignoredWords=None):
     '''
@@ -269,6 +313,9 @@ def readExamples(genre, ignoredWords=None):
     lengthFrequencies = extractSentenceLengthFeatures(lines)
 
     sentenceBeginnings = extractSentenceBeginnings(lines)
+
+    sentenceEndings = extractSentenceEnds(lines)
+
     
     ###############################################
     ## methods
@@ -331,6 +378,10 @@ def readExamples(genre, ignoredWords=None):
     infoDict["sortedTrigramCounts"] = trigrams
     infoDict["sortedFourgramCounts"] = fourGrams
     infoDict["sentenceBeginnings"] = sentenceBeginnings
+    infoDict["sentenceEnds"] = sentenceEndings
+
+    wordMapping = getNGramDict(infoDict)
+    infoDict["mapping"] = wordMapping
 
     genreDict[genre] = infoDict
     
