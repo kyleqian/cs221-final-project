@@ -3,8 +3,8 @@ import songwriter
 import search
 import random
 
-## TODO: SOME SONGS HAVE INVALID CHARACTERS
 ## TODO: RANDOM PRINT STATEMENTS
+## TODO: RANDOMLY REMOVE WORDS
 class TaylorTester():
 	def __init__(self, genre, ucs):
 		self.NUM_SAMPLES = 1
@@ -47,7 +47,7 @@ class TaylorTester():
 		print 'Score: %f%%' % (100.0 * num_correct / num_examples)
 
 	def __read_lyrics(self):
-		curr_song = ""
+		curr_song = ''
 		for l in open('taylor-lyrics.txt', 'r'):
 			line = l.strip().split()
 			if len(line) > 0:
