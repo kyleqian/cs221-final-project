@@ -4,7 +4,7 @@ from copy import deepcopy
 import tagger
 
 class SongState():
-	def __init__(self, genre):
+	def __init__(self, genre, startLyrics=None):
 		self.genre = genre
 		#self.max_lines = util.generateNumSongLines(self.genre)
 		self.max_lines = 8
@@ -390,7 +390,4 @@ class SongWriter():
 		if len(successors) > 4:
 			successors = successors[0:4]
 		return successors
-
-# w = SongWriter('country')
-# ss = w.start_state()
-# suc = w.succ_and_cost(ss)
+		
