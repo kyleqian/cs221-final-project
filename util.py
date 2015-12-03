@@ -224,6 +224,26 @@ def extractSyllableFeatures(lines):
     #print frequencies
     return frequencies
 
+def extractRhymeMap():
+    rhymesMap = {}
+    fo = open("rhymes.txt", "r")
+    for line in fo:
+        splitArr = line.split(":")
+        first = splitArr[0]
+        second = splitArr[1]
+        if len(first) > 0:
+            tokens = second.split(",")
+            values = []
+            for word in tokens:
+                i = word.find("\n")
+                if i != -1:
+                    word = word[:i]
+                values.append(word)
+            #print values
+            rhymesMap[first] = values
+    fo.close()
+    return rhymesMap
+
 def getGramDict(infoDict):
     gramFreq = infoDict["bigrams"]
     return getWordMapping(gramFreq)
@@ -316,6 +336,8 @@ def readExamples(genre, ignoredWords=None):
 
     sentenceEndings = extractSentenceEnds(lines)
 
+    rhymeMap = extractRhymeMap()
+
     
     ###############################################
     ## methods
@@ -379,6 +401,7 @@ def readExamples(genre, ignoredWords=None):
     infoDict["sortedFourgramCounts"] = fourGrams
     infoDict["sentenceBeginnings"] = sentenceBeginnings
     infoDict["sentenceEnds"] = sentenceEndings
+    infoDict["rhymeMap"] = rhymeMap
 
     wordMapping = getNGramDict(infoDict)
     infoDict["mapping"] = wordMapping
