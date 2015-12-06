@@ -496,4 +496,15 @@ class SongWriter():
 		if len(successors) > 4:
 			successors = successors[0:4]
 		return successors
+
+	def generateRandomPOSGrid(self):
+		grid = []
+		grammarTree = self.genre_db[self.genre]["grammarTreeMap"]
+		for i in range(10):  #number of lines in song
+			grid.append(util.randomWalk(grammarTree))
+		print grid
+		return grid
+
+
+
 		
