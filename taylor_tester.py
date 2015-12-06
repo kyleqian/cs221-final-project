@@ -3,11 +3,12 @@ import songwriter
 import search
 import random
 
-## TODO: RANDOM PRINT STATEMENTS
-## TODO: RANDOMLY REMOVE WORDS
+## TODO: STANDARDIZE AND STEM CORPUS
 class TaylorTester():
 	def __init__(self, genre, ucs):
-		self.NUM_SAMPLES = 1
+		self.NUM_SAMPLES = 3
+		self.PERCENT_OF_LINES_TESTED = 20
+		self.TRUE_RANDOM = True
 		self.genre = genre
 		self.ucs = ucs
 		self.taylor_lyrics = defaultdict(list)
@@ -25,11 +26,10 @@ class TaylorTester():
 
 		for filled_song, fill_choices in filled_songs:
 			for l,i in fill_choices:
-				print '\n\n\n'
 				line = list(filled_song[l])
 				line[i] = '[%s]' % line[i]
 				num_examples += 1
-				print ' '.join(line)
+				print '\n', ' '.join(line)
 
 				while True:		
 					response = raw_input('Does this word make sense in this spot? (y/n) >> ')
@@ -57,6 +57,9 @@ class TaylorTester():
 					self.taylor_lyrics[curr_song].append(line)
 
 	def __generate_unfilled_songs(self):
+		random.seed(42)
+		if self.TRUE_RANDOM: random.seed(random.randint(0, 10000))
+		
 		results = []
 		titles = random.sample(self.taylor_lyrics.keys(), self.NUM_SAMPLES)
 		for t in titles:
@@ -65,9 +68,12 @@ class TaylorTester():
 			### remove words
 			tuples_of_lines_and_indices = []
 			for i,line in enumerate(lyrics_matrix):
-				if len(line) > 1:
-					line[1] = '_'
-					tuples_of_lines_and_indices.append((i, 1))
+				if random.randint(1, 100) <= self.PERCENT_OF_LINES_TESTED:
+					# print ' '.join(line)
+					if len(line) > 2:
+						index_to_remove = random.randint(1, len(line) - 1)
+						line[index_to_remove] = '_'
+						tuples_of_lines_and_indices.append((i, index_to_remove))
 
 			results.append((lyrics_matrix, tuples_of_lines_and_indices))
 		return results
@@ -85,8 +91,9 @@ class TaylorTester():
 		for line in self.taylor_lyrics[title]:
 			print ' '.join(line)
 
-genre = 'country'
-ucs = search.UniformCostSearch(0)
-t = TaylorTester(genre, ucs)
-t.evaluate()
-# t.print_lyrics('You Belong With Me')
+if __name__ == '__main__':
+	genre = 'country'
+	ucs = search.UniformCostSearch(0)
+	t = TaylorTester(genre, ucs)
+	t.evaluate()
+	# t.print_lyrics('You Belong With Me')

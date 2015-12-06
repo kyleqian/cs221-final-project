@@ -80,7 +80,8 @@ class UniformCostSearch():
                 if self.verbose >= 3:
                     print "  Action %s => %s with cost %s + %s" % (action, newState, pastCost, cost)
                 if frontier.update(newState, pastCost + cost):
-                    print newState.lyrics
+                    if self.verbose >= 1:
+                        print newState.lyrics
                     # Found better way to go to |newState|, update backpointer.
                     backpointers[newState] = (action, state)
         if self.verbose >= 1:
