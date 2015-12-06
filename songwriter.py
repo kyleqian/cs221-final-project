@@ -13,7 +13,14 @@ class SongState():
 		self.max_lines = 20
 		# self.max_words_per_line = util.generateMaxWordsInLine(self.genre) # TODO
 		#self.lyrics = [['_']*util.generateMaxWordsInLine(self.genre) for _ in xrange(self.max_lines)]
-		self.lyrics = [['_']*8 for _ in xrange(self.max_lines)]
+		blankValues = [6,7,8,9]
+		lyrics = []
+		for _ in xrange(self.max_lines):
+			#num = random.choice(blankValues)
+			arr = ['_']*8
+			lyrics.append(arr)
+
+		self.lyrics = lyrics
 		# numSyllablesInLine = util.syllable_count(word)
 		# rhymingWords = util.findRhymes(words)	
 
@@ -178,14 +185,20 @@ class SongWriter():
 		totalNumSyllables = 0
 		for i in range(len(assignment)):
 			p, next_word = assignment[i]
-			totalNumSyllables += self.getNumSyllablesInWord(next_word)
 			totalNumSyllables += self.getNumSyllablesInLine(state.lyrics[i])
+			if next_word is None:
+				continue
+			totalNumSyllables += self.getNumSyllablesInWord(next_word)
 
 		averageSyllables = totalNumSyllables / len(assignment)
 		for i in range(len(assignment)):
 			p, next_word = assignment[i]
-			lineCount = self.getNumSyllablesInWord(next_word) + self.getNumSyllablesInLine(state.lyrics[i])
+			lineCount = self.getNumSyllablesInLine(state.lyrics[i])
+
+			if next_word is not None:
+				lineCount += self.getNumSyllablesInWord(next_word)	
 			sqdev += (abs(lineCount - averageSyllables))**2
+
 		#print sqdev
 		return cost * (cost / (cost + sqdev));
 
@@ -226,6 +239,8 @@ class SongWriter():
 		cost = 0
 		for i in range(len(assignment)): # note i is the line number
 			p, next_word = assignment[i]
+			if p is None:
+				continue
 			costs = []
 			if p >= 1:
 				wordOneAway = state.lyrics[i][p - 1]
@@ -355,14 +370,15 @@ class SongWriter():
 		for lineNum in range(len(state.lyrics)):
 			linePos = blanks[lineNum]
 			if linePos is None:
+				linePos = 0
 				possibleWords = []
 			else:
 				possibleWords = self.__get_possible_words2(state, lineNum, linePos)
 			assignments.append((linePos, possibleWords))
-
-		combinations = self.getRandomCombinations(assignments)
 			
 
+		combinations = self.getRandomCombinations(assignments)
+		
 		#combinations = self.getCombinations(assignments, [], 0)
 		
 		if len(combinations) > 5:
@@ -387,7 +403,8 @@ class SongWriter():
 		totalPossible = 1
 		for i in range(len(assignments)):
 			linePos, possibleWords = assignments[i]
-			totalPossible *= len(possibleWords)
+			l = len(possibleWords)
+			totalPossible *= l if l > 0 else 1
 		numSamples = min(100,int(totalPossible * 0.4))
 
 		#print "getting %i samples!" % numSamples
@@ -404,8 +421,11 @@ class SongWriter():
 		combination = []
 		for assignment in assignments:
 			linePos, possibleWords = assignment
-			word = random.choice(possibleWords)
-			combination.append((linePos, word))
+			if len(possibleWords) > 0:
+				word = random.choice(possibleWords)
+				combination.append((linePos, word))
+			else:
+				combination.append((None,None))
 		return combination
 
 
@@ -431,13 +451,12 @@ class SongWriter():
 			if blanks[i] is not None:
 				return False
 
-		total = self.numBigrams + self.numTrigrams + self.numFourgrams
-		print total
-		bigramRatio = float(self.numBigrams)/ total
-		trigramRatio = float(self.numTrigrams)/ total
-		fourgramRatio = float(self.numFourgrams) / total
-
-		print "2: %f | 3: %f | 4: %f" % (bigramRatio, trigramRatio, fourgramRatio)
+		if total > 0:
+			total = self.numBigrams + self.numTrigrams + self.numFourgrams
+			bigramRatio = float(self.numBigrams)/ total
+			trigramRatio = float(self.numTrigrams)/ total
+			fourgramRatio = float(self.numFourgrams) / total
+			print "2: %f | 3: %f | 4: %f" % (bigramRatio, trigramRatio, fourgramRatio)
 
 		return True
 
@@ -449,6 +468,8 @@ class SongWriter():
 			next_state = deepcopy(state)
 			for lineNum in range(len(state.lyrics)): # assign next blank for each of the V a new word
 				line_pos,next_word = assignment[lineNum]
+				if line_pos >= len(next_state.lyrics[lineNum]) or line_pos is None:
+					continue
 				next_state.lyrics[lineNum][line_pos] = next_word
 			cost = self.__calculate_cost(state, assignment)
 			successors.append((assignment, next_state, cost))
