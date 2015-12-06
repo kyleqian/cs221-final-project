@@ -451,8 +451,8 @@ class SongWriter():
 			if blanks[i] is not None:
 				return False
 
+		total = self.numBigrams + self.numTrigrams + self.numFourgrams
 		if total > 0:
-			total = self.numBigrams + self.numTrigrams + self.numFourgrams
 			bigramRatio = float(self.numBigrams)/ total
 			trigramRatio = float(self.numTrigrams)/ total
 			fourgramRatio = float(self.numFourgrams) / total
