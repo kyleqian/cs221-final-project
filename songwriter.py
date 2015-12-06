@@ -3,11 +3,14 @@ import random
 from copy import deepcopy
 import tagger
 
+
+
+
 class SongState():
-	def __init__(self, genre):
+	def __init__(self, genre, startLyrics=None):
 		self.genre = genre
 		#self.max_lines = util.generateNumSongLines(self.genre)
-		self.max_lines = 8
+		self.max_lines = 20
 		# self.max_words_per_line = util.generateMaxWordsInLine(self.genre) # TODO
 		#self.lyrics = [['_']*util.generateMaxWordsInLine(self.genre) for _ in xrange(self.max_lines)]
 		self.lyrics = [['_']*8 for _ in xrange(self.max_lines)]
@@ -20,16 +23,42 @@ class SongWriter():
 		self.genre_db = util.readExamples(genre)
 		self.blank_marker = '_'
 		self.startLyrics = startLyrics
-		self.ceiling = 100000
+		self.ceiling = 1000000
+		self.bigramCeiling = 100000
+		self.trigramCeiling = 10000
+		self.fourgramCeiling = 1000
 		self.tagger = tagger.Tagger()		
 		self.cache = {}
 		self.rhymeCache = {}
 		self.syllableCache = {}
+		self.endingCache = {}
+		self.numBigrams = 0
+		self.numTrigrams = 0
+		self.numFourgrams = 0
+		self.sentenceEndingFloor = 50
+
+
+	def getCachedEndingCheck(self,s):
+		arr = s.split(" ")
+		if len(arr) > 4:
+			arr = arr[-4:]
+		s = " ".join(arr)
+		if s in self.endingCache:
+			return self.endingCache[s]
+		return None
+
+	def setCachedEndingCheck(self,s, v):
+		arr = s.split(" ")
+		if len(arr) > 4:
+			arr = arr[-4:]
+		s = " ".join(arr)
+
+		self.endingCache[s] = v
 
 	def getCachedDeduction(self,s):
 		arr = s.split(" ")
 		if len(arr) > 4:
-			arr = arr[:-4]
+			arr = arr[-4:]
 		s = " ".join(arr)
 
 		if s in self.cache:
@@ -39,7 +68,7 @@ class SongWriter():
 	def setCachedDeduction(self,s, d):
 		arr = s.split(" ")
 		if len(arr) > 4:
-			arr = arr[:-4]
+			arr = arr[-4:]
 		s = " ".join(arr)
 
 		self.cache[s] = d
@@ -103,7 +132,7 @@ class SongWriter():
 			return self.ceiling
 		else:
 			bigramCost = bigramFreq[bigram]
-			return self.ceiling - bigramCost
+			return self.bigramCeiling - bigramCost
 
 	def getTrigramCost(self, word1, word2, word3):
 		trigram = "%s %s %s" % (word1, word2, word3)
@@ -112,7 +141,7 @@ class SongWriter():
 			return self.ceiling
 		else:
 			trigramCost = trigramFreq[trigram]
-			return self.ceiling - 2*trigramCost
+			return self.trigramCeiling - trigramCost
 
 	def getFourGramCost(self, w1, w2, w3, w4):
 		fourGram = "%s %s %s %s" % (w1, w2, w3, w4)
@@ -121,7 +150,7 @@ class SongWriter():
 			return self.ceiling
 		else:
 			fourGramCost = fourGramFreq[fourGram]
-			return self.ceiling - 3*fourGramCost
+			return self.fourgramCeiling - fourGramCost
 
 	#cuts cost in half
 	def getValidSentenceCostDeduction(self,s,cost):
@@ -132,6 +161,10 @@ class SongWriter():
 		# if self.tagger.sentenceEndingIsValid(s):
 		# 	return int(cost * 0.5)
 		# return 0
+
+	def isValidSentenceEnding(self,s):
+		endings = self.genre_db[self.genre]["sentenceEnds"]
+		return s in endings
 
 	def getRhymeDeduction(self, w1,w2,cost):
 		rhymes1 = util.findRhymes(w1)
@@ -198,26 +231,50 @@ class SongWriter():
 				wordOneAway = state.lyrics[i][p - 1]
 				bigramCost = self.getBigramCost(wordOneAway, next_word)
 				costs.append(bigramCost)
+				if bigramCost < self.ceiling:
+					self.numBigrams += 1
 			if p >= 2:
 				wordTwoAway = state.lyrics[i][p - 2]
 				trigramCost = self.getTrigramCost(wordTwoAway, wordOneAway, next_word)
 				costs.append(trigramCost)
+				if trigramCost < self.ceiling:
+					self.numTrigrams += 1
 			if p >= 3:
 				wordThreeAway = state.lyrics[i][p - 3]
 				fourGramCost = self.getFourGramCost(wordThreeAway, wordTwoAway, wordOneAway, next_word)
 				costs.append(fourGramCost)
+				if fourGramCost < self.ceiling:
+					self.numFourgrams += 1
 			currcost = min(costs)
 
-			if p == len(state.lyrics[i]) - 1: # end of the line
+
+			# # cost based sentence ending
+			# if p == len(state.lyrics[i]) - 1: # end of the line
+			# 	arr = state.lyrics[i][:-1] + [next_word]
+			# 	s = " ".join(arr)
+			# 	deduction = self.getCachedDeduction(s)
+			# 	if  deduction is None:
+			# 		deduction = self.getValidSentenceCostDeduction(s, currcost)
+			# 		self.setCachedDeduction(s,deduction)
+			# 	# if deduction > 0:
+			# 	# 	print "%s" % (s)
+			# 	currcost -= deduction
+
+			if p == len(state.lyrics[i])  - 1:
 				arr = state.lyrics[i][:-1] + [next_word]
 				s = " ".join(arr)
-				deduction = self.getCachedDeduction(s)
-				if  deduction is None:
-					deduction = self.getValidSentenceCostDeduction(s, currcost)
-					self.setCachedDeduction(s,deduction)
-				# if deduction > 0:
-				# 	print "%s" % (s)
-				currcost -= deduction
+				v = self.getCachedEndingCheck(s)
+				if v is None:
+					v = self.isValidSentenceEnding(s)
+					self.setCachedEndingCheck(s, v)
+					if v:
+						print "VALID ENDING!!!"
+						currcost = self.sentenceEndingFloor
+				elif v:
+					print "VALID ENDING!!!"
+					currcost = self.sentenceEndingFloor	
+
+
 			
 			# if i % 2 == 1 and p == len(state.lyrics[i]) - 1:
 			# 	w1 = assignment[i][1]
@@ -254,6 +311,7 @@ class SongWriter():
 			# 		costs.append(fourGramCost)
 			# 	cost += min(costs)
 			# 	self.cache[next_word] = cost
+		# print cost
 		return cost
 
 	"""
@@ -372,6 +430,15 @@ class SongWriter():
 		for i in range(len(blanks)):
 			if blanks[i] is not None:
 				return False
+
+		total = self.numBigrams + self.numTrigrams + self.numFourgrams
+		print total
+		bigramRatio = float(self.numBigrams)/ total
+		trigramRatio = float(self.numTrigrams)/ total
+		fourgramRatio = float(self.numFourgrams) / total
+
+		print "2: %f | 3: %f | 4: %f" % (bigramRatio, trigramRatio, fourgramRatio)
+
 		return True
 
 	def succ_and_cost(self, state):
@@ -380,7 +447,7 @@ class SongWriter():
 		assignments = self.__get_possible_assignments(state)
 		for assignment in assignments:
 			next_state = deepcopy(state)
-			for lineNum in range(len(state.lyrics)): # assign next blank for each of the lines a new word
+			for lineNum in range(len(state.lyrics)): # assign next blank for each of the V a new word
 				line_pos,next_word = assignment[lineNum]
 				next_state.lyrics[lineNum][line_pos] = next_word
 			cost = self.__calculate_cost(state, assignment)
@@ -390,7 +457,4 @@ class SongWriter():
 		if len(successors) > 4:
 			successors = successors[0:4]
 		return successors
-
-# w = SongWriter('country')
-# ss = w.start_state()
-# suc = w.succ_and_cost(ss)
+		
