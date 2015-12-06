@@ -7,11 +7,11 @@ from datetime import datetime
 
 ## TODO: STANDARDIZE AND STEM CORPUS
 class TaylorTester():
-	def __init__(self, genre, ucs):
+	def __init__(self, ucs):
 		self.NUM_SAMPLES = 3
 		self.PERCENT_OF_LINES_TESTED = 20
 		self.TRUE_RANDOM = True
-		self.genre = genre
+		self.GENRE = 'hiphoprap'
 		self.ucs = ucs
 		self.taylor_lyrics = defaultdict(list)
 		self.__read_lyrics()
@@ -97,7 +97,7 @@ class TaylorTester():
 	def __fill_songs(self, unfilled_songs):
 		results = []
 		for unfilled_song,fill_list in unfilled_songs:
-			sw = songwriter.SongWriter(self.genre, unfilled_song)
+			sw = songwriter.SongWriter(self.GENRE, unfilled_song)
 			self.ucs.solve(sw)
 			filled_song = ucs.finalState.lyrics
 			results.append((filled_song, fill_list))
@@ -108,8 +108,7 @@ class TaylorTester():
 			print ' '.join(line)
 
 if __name__ == '__main__':
-	genre = 'hiphoprap'
 	ucs = search.UniformCostSearch(0)
-	t = TaylorTester(genre, ucs)
+	t = TaylorTester(ucs)
 	t.evaluate()
 	# t.print_lyrics('You Belong With Me')
