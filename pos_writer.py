@@ -6,6 +6,7 @@ import json
 import sys
 from collections import Counter
 from collections import defaultdict
+import random
 
 def tagSentence(text):
 	text = word_tokenize(text)
@@ -112,6 +113,16 @@ def traverseTree(grammarTree,partsOfSpeechArray):
 	arr =  [item for item in grammarTree]
 	return arr
 
+def randomWalk(grammarTree):
+	posArray = []
+	while(True):
+		arr = [item for item in grammarTree]
+		if len(arr) == 0: break
+		pos = random.choice(arr)
+		posArray.append(pos)
+		grammarTree = grammarTree[pos]
+	return posArray
+
 
 def main(argv):
 	#if len(sys.argv)!=3:
@@ -125,8 +136,12 @@ def main(argv):
 	#createPOSMaps()
 	with open("grammarTree_country.json") as datafile:
 		data = json.loads(datafile.read())
-
-
+	with open("PosToWords.json") as datafile2:
+		PosToWordsMap = json.loads(datafile2.read())
+	with open("WordsToPOS.json") as datafile3:
+		WordsToPOSMap = json.loads(datafile3.read())
+	#print PosToWordsMap[""]
+	print randomWalk(data)
 	#writeTreeToFile(t,out)
 	#out.close()
 	#if argv is not None:

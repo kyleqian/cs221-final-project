@@ -416,7 +416,16 @@ def chooseRandomGram(genre_db, genre):
     unigrams = infoDict["unigrams"] 
     choice = weightedRandomChoice(unigrams)
     return choice
-    
+
+def randomWalk(grammarTree):
+    posArray = []
+    while(True):
+        arr = [item for item in grammarTree]
+        if len(arr) == 0: break
+        pos = random.choice(arr)
+        posArray.append(pos)
+        grammarTree = grammarTree[pos]
+    return posArray
     
     
     
