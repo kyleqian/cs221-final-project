@@ -338,6 +338,17 @@ def readExamples(genre, ignoredWords=None):
 
     rhymeMap = extractRhymeMap()
 
+    fileName = "grammarTree_%s.json" % genre
+    with open(fileName) as datafile:
+        grammarTreeMap = json.loads(datafile.read())
+
+    with open("POSToWords.json") as datafile:
+        posToWordsMap = json.loads(datafile.read())
+
+    with open("wordsToPOS.json") as datafile:
+        wordsToPosMap = json.loads(datafile.read())
+
+
     
     ###############################################
     ## methods
@@ -402,6 +413,11 @@ def readExamples(genre, ignoredWords=None):
     infoDict["sentenceBeginnings"] = sentenceBeginnings
     infoDict["sentenceEnds"] = sentenceEndings
     infoDict["rhymeMap"] = rhymeMap
+    infoDict["grammarTreeMap"] = grammarTreeMap
+    infoDict["posToWordsMap"] = posToWordsMap
+    infoDict["wordsToPosMap"] = wordsToPosMap
+
+    print posToWordsMap
 
     wordMapping = getNGramDict(infoDict)
     infoDict["mapping"] = wordMapping
