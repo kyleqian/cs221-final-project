@@ -2,6 +2,8 @@ from collections import defaultdict
 import songwriter
 import search
 import random
+import os
+from datetime import datetime
 
 ## TODO: STANDARDIZE AND STEM CORPUS
 class TaylorTester():
@@ -17,6 +19,7 @@ class TaylorTester():
 	def evaluate(self):
 		num_correct = 0
 		num_examples = 0
+		results = []
 
 		# list of (unfilled lyric matrix, list of (line number, word index))
 		unfilled_songs = self.__generate_unfilled_songs()
@@ -29,22 +32,37 @@ class TaylorTester():
 				line = list(filled_song[l])
 				line[i] = '[%s]' % line[i]
 				num_examples += 1
-				print '\n', ' '.join(line)
+
+				filled_line = ' '.join(line)
+				print '\n', filled_line
 
 				while True:		
 					response = raw_input('Does this word make sense in this spot? (y/n) >> ')
 					if response == 'y':
+						filled_line += '\ny\n\n'
 						num_correct += 1
 						break
 					elif response == 'n':
+						filled_line += '\nn\n\n'
 						break
 					else:
 						continue
+				results.append(filled_line)
 
-		print '\nFinished!'
+		### logging
+		score = (100.0 * num_correct / num_examples)
+		with open(os.path.dirname(os.path.realpath(__file__)) + '/logs/' + str(datetime.now()) + '.txt', 'w') as f:
+			for x in results:
+				f.write(x)
+			f.write('\n')
+			f.write('Good examples: %d\n' % num_correct)
+			f.write('Total examples: %d\n' % num_examples)
+			f.write('Score: %f%%' % score)
+
+		print '\nFinished! Results have been logged.'
 		print 'Good examples: %d' % num_correct
 		print 'Total examples: %d' % num_examples
-		print 'Score: %f%%' % (100.0 * num_correct / num_examples)
+		print 'Score: %f%%' % score
 
 	def __read_lyrics(self):
 		curr_song = ''
@@ -57,9 +75,8 @@ class TaylorTester():
 					self.taylor_lyrics[curr_song].append(line)
 
 	def __generate_unfilled_songs(self):
-		random.seed(42)
-		if self.TRUE_RANDOM: random.seed(random.randint(0, 10000))
-		
+		if not self.TRUE_RANDOM: random.seed(42)
+
 		results = []
 		titles = random.sample(self.taylor_lyrics.keys(), self.NUM_SAMPLES)
 		for t in titles:
@@ -69,7 +86,6 @@ class TaylorTester():
 			tuples_of_lines_and_indices = []
 			for i,line in enumerate(lyrics_matrix):
 				if random.randint(1, 100) <= self.PERCENT_OF_LINES_TESTED:
-					# print ' '.join(line)
 					if len(line) > 2:
 						index_to_remove = random.randint(1, len(line) - 1)
 						line[index_to_remove] = '_'
@@ -92,7 +108,7 @@ class TaylorTester():
 			print ' '.join(line)
 
 if __name__ == '__main__':
-	genre = 'country'
+	genre = 'hiphoprap'
 	ucs = search.UniformCostSearch(0)
 	t = TaylorTester(genre, ucs)
 	t.evaluate()
