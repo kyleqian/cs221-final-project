@@ -334,6 +334,24 @@ class SongWriter():
 	An assignment = (lineNumber, [next_words])
 	"""	
 
+	def getPos(self,state, line_number, line_position):
+		if line_number >= 0 and line_number < len(state.partOfSpeechGrid):
+			line = state.lyrics[line_number]
+			if line_position >= 0 and line_position < len(line):
+				return state.partOfSpeechGrid[line_number][line_position]
+		return None
+
+	def __get_possible_words3(self, state, line_number, line_position):
+		pos = self.getPos(state,line_number, line_position)
+		if pos is not None:
+			posToWordMap = self.genre_db[self.genre]["posToWordMap"]
+			posToWordList = posToWordMap[pos]
+			print posToWordList
+			return posToWordList
+		return self.__get_possible_words2(state, line_number, line_position)
+
+
+
 	def __get_possible_words2(self, state, line_number, line_position):
 		wordThreeAway = None
 		wordTwoAway = None
