@@ -21,17 +21,20 @@ import random
 # lyrics =  ucs.finalState.lyrics
 
 def outputSong(genre):
-	ucs = search.UniformCostSearch(0)
+	ucs = search.UniformCostSearch(1)
 	w = songwriter.SongWriter(genre)
 	ucs.solve(w)
 	lyrics =  ucs.finalState.lyrics
+	for line in  ucs.finalState.partOfSpeechGrid:
+		print line
+
 	newLines = []
 	print "========================================================="
 	print "Here's a song for you. I hope you like it!\n\n"
 	for line in lyrics:
 		newLine = []
 		for word in line:
-			newLine.append(str(word))
+			newLine.append(word)
 		newLines.append(" ".join(newLine))
 
 	for line in newLines:
@@ -85,7 +88,7 @@ def writeSongs(numSongs, fileName):
 		fo.close()
 
 def main(argv):
-	if argv is not None:
+	if argv is not None and len(argv) > 0:
 		opt = argv[0]
 		if opt == "-s":
 			if len(argv) != 3:
@@ -102,7 +105,7 @@ def main(argv):
 			genre = argv[1]
 			outputSong(genre)
 	else:
-		print("Error: Please use -o or -s...")
+		print("Error: Please use -o or -s with the appropriate arguments")
 
 
 		

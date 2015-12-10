@@ -7,6 +7,18 @@ import tagger
 
 
 class SongState():
+	def setPartOfSpeechGrid(self, grid):
+		self.partOfSpeechGrid = grid
+		self.max_lines = len(grid)
+		lyrics = []
+		for line in grid:
+			l = len(line)
+			arr = ["_"]*l
+			lyrics.append(arr)
+		self.lyrics = lyrics
+
+
+
 	def __init__(self, genre, startLyrics=None):
 		self.genre = genre
 		#self.max_lines = util.generateNumSongLines(self.genre)
@@ -21,6 +33,7 @@ class SongState():
 			lyrics.append(arr)
 
 		self.lyrics = lyrics
+		self.partOfSpeechGrid = []
 		# numSyllablesInLine = util.syllable_count(word)
 		# rhymingWords = util.findRhymes(words)	
 
@@ -92,17 +105,31 @@ class SongWriter():
 		self.rhymeCache[(s2,s1)] = d
 
 	def __generate_seeds(self, state):
-		for line in state.lyrics:
-			sentenceBeginnings = self.genre_db[self.genre]["sentenceBeginnings"]
-			seed_word = random.choice(sentenceBeginnings)
+		wordsToPOSMap = self.genre_db[self.genre]["wordsToPosMap"]
+		posToWordsMap = self.genre_db[self.genre]["posToWordsMap"]
+		sentenceBeginnings = self.genre_db[self.genre]["sentenceBeginnings"]
+		for i in range(len(state.lyrics)):
+			line = state.lyrics[i]
+			pos = state.partOfSpeechGrid[i][0]
+			possibleWords = posToWordsMap[pos]
+
+			intersection = self.intersection(sentenceBeginnings, possibleWords)
+			if len(intersection) == 0:
+				print "WARNING! NO WORDS FOUND IN THE INTERSECTION OF TWO ARRAYS IN START STATE"
+				exit()
+			
+			seed_word = random.choice(intersection)
 			#seed_word = util.chooseRandomGram(self.genre_db, self.genre)
 			line[0] = seed_word
 		
 		return state
 
 	def start_state(self):
+		numLines = 10
 		if self.startLyrics is None:
+			grid = self.generateRandomPOSGrid(numLines)
 			state = SongState(self.genre)
+			state.setPartOfSpeechGrid(grid)
 			return self.__generate_seeds(state)
 		else:
 			state = SongState(self.genre)
@@ -235,32 +262,178 @@ class SongWriter():
 			self.syllableCache[line] = total
 		return total
 
+	def getNumPossiblePosMatches(self, state, line_number):
+		nonBlankCount = 0
+		line = state.lyrics[line_number]
+		for word in line:
+			if word != self.blank_marker:
+				nonBlankCount += 1
+		return nonBlankCount
+
+	def getPartOfSpeechPoints(self, state, line_number):
+		currGridLine = state.partOfSpeechGrid[line_number]
+		line = state.lyrics[line_number]
+		wordsToPosMap = self.genre_db[self.genre]["wordsToPosMap"]
+
+		total = self.getNumPossiblePosMatches(state,line_number)
+		ct = 0
+		for p in range(len(line)):
+			word = line[p]
+			if word == self.blank_marker:
+				break
+			if word in wordsToPosMap:
+				partsOfSpeech = wordsToPosMap[word]
+				currPos = currGridLine[p]
+				if currPos in partsOfSpeech:
+					ct += 1
+			else:
+				print "word - %s - not in words " % word
+			
+		points = 20000 * ct / total
+		return 20000 - points
+
+	"""
+	GRAM points:
+
+	A value from 0 - 1000.
+
+	Calculated by taking a fraction of the total number of 
+	possible grams formed. In a perfect sentence. The total
+	number of possible grams will be equal to the sum of
+
+	numBigrams = len(sentence) - 1
+	numTrigrams = len(sentence) - 2
+	numFourgrams = len(sentence) - 3
+
+	if a complete match is found, the score of that sentence will 
+	be 0 (1000 - 1000 * fract) where fract is equal to
+
+	numGramsFound / totalPossiblegrams
+
+	For example, if len(sentence) == 8
+
+	numBigrams = 7
+	numTrigrams = 6
+	numFourgrams = 5
+
+	totalPossibleGrams: 18
+
+	fract = n / 18, where n is the number of found grams
+
+	"""
+
+	def getNumPossibleGrams(self, line, n):
+		nonBlankCount = 0
+		for word in line:
+			if word != self.blank_marker:
+				nonBlankCount += 1
+		numPossible = nonBlankCount - (n - 1)
+		return numPossible if numPossible > 0 else 0
+
+	def getNumGramMatches(self,line,n):
+		start = 0
+		if n == 2:
+			start = 1
+			matches = 0
+			for i in range(start,len(line)):
+				wordOneAway = line[i - 1]
+				curr = line[i]
+				bigram = "%s %s" % (wordOneAway, curr)
+				bigramFreq = self.genre_db[self.genre]["bigrams"]
+				if bigram in bigramFreq:
+					matches += 1
+			return matches
+		elif n == 3:
+			start = 2
+			matches = 0
+			for i in range(start,len(line)):
+				wordTwoAway = line[i - 2]
+				wordOneAway = line[i - 1]
+				curr = line[i]
+				trigram = "%s %s %s" % (wordTwoAway, wordOneAway, curr)
+				trigramFreq = self.genre_db[self.genre]["trigrams"]
+				if trigram in trigramFreq:
+					matches += 1
+			return matches
+		elif n == 4:
+			start = 3
+			matches = 0
+			for i in range(start,len(line)):
+				wordThreeAway = line[i - 3]
+				wordTwoAway = line[i - 2]
+				wordOneAway = line[i - 1]
+				curr = line[i]
+				fourgram = "%s %s %s %s" % (wordThreeAway,wordTwoAway, wordOneAway, curr)
+				fourgramFreq = self.genre_db[self.genre]["fourgrams"]
+				if fourgram in fourgramFreq:
+					matches += 1
+			return matches
+		return 0
+		
+			
+
+
+	def getNumPossibleGramMatches(self, line):
+		return self.getNumPossibleGrams(line, 2) + self.getNumPossibleGrams(line,3) + self.getNumPossibleGrams(line,4)
+
+	def getGramPoints(self, state, line_number):
+		line = state.lyrics[line_number]
+		totalNumGrams = self.getNumPossibleGramMatches(line)
+		
+		ct = self.getNumGramMatches(line,2)
+		ct += self.getNumGramMatches(line,3)
+		ct += self.getNumGramMatches(line,4)
+
+		points = 50000 * ct / totalNumGrams
+		return 50000 - points
+
 	def __calculate_cost(self, state, assignment):
 		cost = 0
 		for i in range(len(assignment)): # note i is the line number
 			p, next_word = assignment[i]
+
 			if p is None:
 				continue
-			costs = []
-			if p >= 1:
-				wordOneAway = state.lyrics[i][p - 1]
-				bigramCost = self.getBigramCost(wordOneAway, next_word)
-				costs.append(bigramCost)
-				if bigramCost < self.ceiling:
-					self.numBigrams += 1
-			if p >= 2:
-				wordTwoAway = state.lyrics[i][p - 2]
-				trigramCost = self.getTrigramCost(wordTwoAway, wordOneAway, next_word)
-				costs.append(trigramCost)
-				if trigramCost < self.ceiling:
-					self.numTrigrams += 1
-			if p >= 3:
-				wordThreeAway = state.lyrics[i][p - 3]
-				fourGramCost = self.getFourGramCost(wordThreeAway, wordTwoAway, wordOneAway, next_word)
-				costs.append(fourGramCost)
-				if fourGramCost < self.ceiling:
-					self.numFourgrams += 1
-			currcost = min(costs)
+			
+			state.lyrics[i][p] = next_word
+
+			vals = [1,2,3,4,5,6,7,8,9,10]
+			choice = random.choice(vals)
+			points = 0
+			if vals < 3:
+				points = self.getGramPoints(state,i)
+			else:
+				points = self.getPartOfSpeechPoints(state,i)
+
+			#gramPoints = self.getGramPoints(state,i)
+			#posPoints = self.getPartOfSpeechPoints(state,i)
+			state.lyrics[i][p] = self.blank_marker
+
+			#cost += gramPoints
+			cost += points
+
+			# if p is None:
+			# 	continue
+			# costs = []
+			# if p >= 1:
+			# 	wordOneAway = state.lyrics[i][p - 1]
+			# 	bigramCost = self.getBigramCost(wordOneAway, next_word)
+			# 	costs.append(bigramCost)
+			# 	if bigramCost < self.ceiling:
+			# 		self.numBigrams += 1
+			# if p >= 2:
+			# 	wordTwoAway = state.lyrics[i][p - 2]
+			# 	trigramCost = self.getTrigramCost(wordTwoAway, wordOneAway, next_word)
+			# 	costs.append(trigramCost)
+			# 	if trigramCost < self.ceiling:
+			# 		self.numTrigrams += 1
+			# if p >= 3:
+			# 	wordThreeAway = state.lyrics[i][p - 3]
+			# 	fourGramCost = self.getFourGramCost(wordThreeAway, wordTwoAway, wordOneAway, next_word)
+			# 	costs.append(fourGramCost)
+			# 	if fourGramCost < self.ceiling:
+			# 		self.numFourgrams += 1
+			# currcost = min(costs)
 
 
 			# # cost based sentence ending
@@ -275,19 +448,19 @@ class SongWriter():
 			# 	# 	print "%s" % (s)
 			# 	currcost -= deduction
 
-			if p == len(state.lyrics[i])  - 1:
-				arr = state.lyrics[i][:-1] + [next_word]
-				s = " ".join(arr)
-				v = self.getCachedEndingCheck(s)
-				if v is None:
-					v = self.isValidSentenceEnding(s)
-					self.setCachedEndingCheck(s, v)
-					if v:
-						print "VALID ENDING!!!"
-						currcost = self.sentenceEndingFloor
-				elif v:
-					print "VALID ENDING!!!"
-					currcost = self.sentenceEndingFloor	
+			# if p == len(state.lyrics[i])  - 1:
+			# 	arr = state.lyrics[i][:-1] + [next_word]
+			# 	s = " ".join(arr)
+			# 	v = self.getCachedEndingCheck(s)
+			# 	if v is None:
+			# 		v = self.isValidSentenceEnding(s)
+			# 		self.setCachedEndingCheck(s, v)
+			# 		if v:
+			# 			print "VALID ENDING!!!"
+			# 			currcost = self.sentenceEndingFloor
+			# 	elif v:
+			# 		print "VALID ENDING!!!"
+			# 		currcost = self.sentenceEndingFloor	
 
 
 			
@@ -302,7 +475,7 @@ class SongWriter():
 			# 		print "%s|%s" % (w1,w2)
 			# 	currcost -= rhymeDeduction
 
-			cost += currcost
+			# cost += currcost
 
 		blanksRemaining = self.__get_num_blanks_remaining(state) - len(assignment) # an assignment has at least len(assignment) new words in it
 		if blanksRemaining <= len(assignment): #only calculate the syllable count on the last iteration to pick the assignment with the least squared error
@@ -334,6 +507,28 @@ class SongWriter():
 	An assignment = (lineNumber, [next_words])
 	"""	
 
+	def intersection(self,arr1, arr2):
+		f = {}
+		for obj in arr1:
+			if obj not in f:
+				f[obj] = obj
+		arr1 = f.values()
+		f = {}
+		for obj in arr2:
+			if obj not in f:
+				f[obj] = obj
+		arr2 = f.values()
+		m = {}
+		for obj in arr1:
+			if obj not in m:
+				m[obj] = 1
+		result = []
+		for obj in arr2:
+			if obj in m:
+				result.append(obj)
+		return result
+
+
 	def getPos(self,state, line_number, line_position):
 		if line_number >= 0 and line_number < len(state.partOfSpeechGrid):
 			line = state.lyrics[line_number]
@@ -344,10 +539,12 @@ class SongWriter():
 	def __get_possible_words3(self, state, line_number, line_position):
 		pos = self.getPos(state,line_number, line_position)
 		if pos is not None:
-			posToWordMap = self.genre_db[self.genre]["posToWordMap"]
+			posToWordMap = self.genre_db[self.genre]["posToWordsMap"]
 			posToWordList = posToWordMap[pos]
-			print posToWordList
-			return posToWordList
+			wordList = self.__get_possible_words2(state, line_number, line_position)
+			intersection = self.intersection(posToWordList, wordList)
+			if len(intersection) > 0:
+				return intersection
 		return self.__get_possible_words2(state, line_number, line_position)
 
 
@@ -391,7 +588,7 @@ class SongWriter():
 				linePos = 0
 				possibleWords = []
 			else:
-				possibleWords = self.__get_possible_words2(state, lineNum, linePos)
+				possibleWords = self.__get_possible_words3(state, lineNum, linePos)
 			assignments.append((linePos, possibleWords))
 			
 
@@ -497,12 +694,15 @@ class SongWriter():
 			successors = successors[0:4]
 		return successors
 
-	def generateRandomPOSGrid(self):
+	def generateRandomPOSGrid(self, numLines):
 		grid = []
 		grammarTree = self.genre_db[self.genre]["grammarTreeMap"]
-		for i in range(10):  #number of lines in song
-			grid.append(util.randomWalk(grammarTree))
-		print grid
+		for i in range(numLines):  #number of lines in song
+			while(True):
+				walk = util.randomWalk(grammarTree)
+				if len(walk) <= 8 and len(walk) >= 6:
+					grid.append(walk)
+					break
 		return grid
 
 

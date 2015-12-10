@@ -417,8 +417,6 @@ def readExamples(genre, ignoredWords=None):
     infoDict["posToWordsMap"] = posToWordsMap
     infoDict["wordsToPosMap"] = wordsToPosMap
 
-    print posToWordsMap
-
     wordMapping = getNGramDict(infoDict)
     infoDict["mapping"] = wordMapping
 
