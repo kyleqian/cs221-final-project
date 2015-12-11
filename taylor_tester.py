@@ -8,11 +8,11 @@ import sys
 from datetime import datetime
 
 class TaylorTester():
-	def __init__(self, ucs, baseline_flag=False, true_random=True):
+	def __init__(self, ucs, genre, baseline_flag=False, true_random=True):
 		self.BASELINE_FLAG = baseline_flag
+		self.GENRE = 'hiphoprap'
 		self.NUM_SAMPLES = 3
 		self.PERCENT_OF_LINES_TESTED = 20
-		self.GENRE = 'hiphoprap'
 		self.ucs = ucs
 		self.taylor_lyrics = defaultdict(list)
 		self.corpus = set()
@@ -129,8 +129,13 @@ class TaylorTester():
 			print ' '.join(line)
 
 if __name__ == '__main__':
-	baseline_flag = True if len(sys.argv) > 1 and sys.argv[1] == '-b' else False
+	baseline_flag = True if '-b' in sys.argv else False
+	while True:
+		genre = raw_input('What genre? (country, hiphoprap, or pop) >> ')
+		if genre in ['country', 'hiphoprap', 'pop']:
+			break		
+
 	ucs = search.UniformCostSearch(0)
-	t = TaylorTester(ucs, baseline_flag)
+	t = TaylorTester(ucs, genre, baseline_flag)
 	t.evaluate()
 	# t.print_lyrics('You Belong With Me')
