@@ -21,10 +21,7 @@ class SongState():
 
 	def __init__(self, genre, startLyrics=None):
 		self.genre = genre
-		#self.max_lines = util.generateNumSongLines(self.genre)
 		self.max_lines = 20
-		# self.max_words_per_line = util.generateMaxWordsInLine(self.genre) # TODO
-		#self.lyrics = [['_']*util.generateMaxWordsInLine(self.genre) for _ in xrange(self.max_lines)]
 		blankValues = [6,7,8,9]
 		lyrics = []
 		for _ in xrange(self.max_lines):
@@ -58,41 +55,6 @@ class SongWriter():
 		self.sentenceEndingFloor = 50
 
 
-	def getCachedEndingCheck(self,s):
-		arr = s.split(" ")
-		if len(arr) > 4:
-			arr = arr[-4:]
-		s = " ".join(arr)
-		if s in self.endingCache:
-			return self.endingCache[s]
-		return None
-
-	def setCachedEndingCheck(self,s, v):
-		arr = s.split(" ")
-		if len(arr) > 4:
-			arr = arr[-4:]
-		s = " ".join(arr)
-
-		self.endingCache[s] = v
-
-	def getCachedDeduction(self,s):
-		arr = s.split(" ")
-		if len(arr) > 4:
-			arr = arr[-4:]
-		s = " ".join(arr)
-
-		if s in self.cache:
-			return self.cache[s]
-		return None
-
-	def setCachedDeduction(self,s, d):
-		arr = s.split(" ")
-		if len(arr) > 4:
-			arr = arr[-4:]
-		s = " ".join(arr)
-
-		self.cache[s] = d
-
 	def getCachedRhymeDeduction(self, s1, s2):
 		if (s1,s2) in self.rhymeCache:
 			return self.rhymeCache[(s1,s2)]
@@ -115,8 +77,7 @@ class SongWriter():
 
 			intersection = self.intersection(sentenceBeginnings, possibleWords)
 			if len(intersection) == 0:
-				print "WARNING! NO WORDS FOUND IN THE INTERSECTION OF TWO ARRAYS IN START STATE"
-				exit()
+				return None
 			
 			seed_word = random.choice(intersection)
 			#seed_word = util.chooseRandomGram(self.genre_db, self.genre)
@@ -127,11 +88,14 @@ class SongWriter():
 	def start_state(self):
 		numLines = 10
 		if self.startLyrics is None:
-			grid = self.generateRandomPOSGrid(numLines)
-			state = SongState(self.genre)
-			state.setPartOfSpeechGrid(grid)
-			state.recreateLyricsBasedOnGrid(grid)
-			return self.__generate_seeds(state)
+			while True:
+				grid = self.generateRandomPOSGrid(numLines)
+				state = SongState(self.genre)
+				state.setPartOfSpeechGrid(grid)
+				state.recreateLyricsBasedOnGrid(grid)
+				state = self.__generate_seeds(state)
+				if state is not None:
+					return state
 		else:
 			state = SongState(self.genre)
 			state.lyrics = self.startLyrics
@@ -145,8 +109,6 @@ class SongWriter():
 		for line in startLyrics:
 			sentence = " ".join(line)
 			pos_sentence = self.tagger.tagSentence(sentence)
-			if len(pos_sentence) != len(line):
-				print "THIS WILL  CRASH!"
 			pos_line = [tup[1] for tup in pos_sentence]
 			grid.append(pos_line)
 		return grid
@@ -396,11 +358,14 @@ class SongWriter():
 		ct += self.getNumGramMatches(line,3)
 		ct += self.getNumGramMatches(line,4)
 
-		points = 50000 * ct / totalNumGrams
-		return 50000 - points
+		points = 20000 * ct / totalNumGrams
+		return 20000 - points
 
 	def __calculate_cost(self, state, assignment):
 		cost = 0
+
+		
+
 		for i in range(len(assignment)): # note i is the line number
 			p, next_word = assignment[i]
 
@@ -412,11 +377,14 @@ class SongWriter():
 			vals = [1,2,3,4,5,6,7,8,9,10]
 			choice = random.choice(vals)
 			points = 0
-			if vals < 3:
+			if choice < 6 and p < len(state.lyrics[i]) - 1:
 				points = self.getGramPoints(state,i)
 			else:
 				points = self.getPartOfSpeechPoints(state,i)
 
+			if p == len(state.lyrics[i]) - 1:
+				if self.isValidSentenceEnding(next_word):
+					points = 0.1 * points
 			#gramPoints = self.getGramPoints(state,i)
 			#posPoints = self.getPartOfSpeechPoints(state,i)
 			state.lyrics[i][p] = self.blank_marker
@@ -553,7 +521,7 @@ class SongWriter():
 		if pos is not None:
 			posToWordMap = self.genre_db[self.genre]["posToWordsMap"]
 			posToWordList = posToWordMap[pos]
-			wordList = self.__get_possible_words2(state, line_number, line_position)
+			wordList = self.__get_possible_words2(state, line_number, line_position)	
 			intersection = self.intersection(posToWordList, wordList)
 			if len(intersection) > 0:
 				return intersection
@@ -607,8 +575,8 @@ class SongWriter():
 		
 		#combinations = self.getCombinations(assignments, [], 0)
 		
-		if len(combinations) > 5:
-			combinations = combinations[0:5]
+		if len(combinations) > 10:
+			combinations = combinations[0:10]
 		#print combinations
 		
 		# final = []
@@ -630,7 +598,7 @@ class SongWriter():
 			linePos, possibleWords = assignments[i]
 			l = len(possibleWords)
 			totalPossible *= l if l > 0 else 1
-		numSamples = min(100,int(totalPossible * 0.4))
+		numSamples = min(100,int(totalPossible))
 
 		if numSamples == 0:
 			numSamples = 1
