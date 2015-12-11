@@ -12,6 +12,7 @@ class Tagger(object):
 		#self.structures = list(self.structureMap)
 	def tagSentence(self, text):
 		text = word_tokenize(text)
+		print "Tagging sentence: %s" % text
 		return nltk.pos_tag(text)
 
 	def sentenceEndingIsValid(self, text):

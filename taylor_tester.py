@@ -99,7 +99,10 @@ class TaylorTester():
 		for unfilled_song,fill_list in unfilled_songs:
 			sw = songwriter.SongWriter(self.GENRE, unfilled_song)
 			self.ucs.solve(sw)
-			filled_song = ucs.finalState.lyrics
+			if ucs.finalState.lyrics is not None:
+				filled_song = ucs.finalState.lyrics
+			else:
+				print "No solution"
 			results.append((filled_song, fill_list))
 		return results
 

@@ -4,12 +4,12 @@ from copy import deepcopy
 import tagger
 
 
-
-
 class SongState():
 	def setPartOfSpeechGrid(self, grid):
 		self.partOfSpeechGrid = grid
 		self.max_lines = len(grid)
+
+	def recreateLyricsBasedOnGrid(self, grid):
 		lyrics = []
 		for line in grid:
 			l = len(line)
@@ -130,12 +130,26 @@ class SongWriter():
 			grid = self.generateRandomPOSGrid(numLines)
 			state = SongState(self.genre)
 			state.setPartOfSpeechGrid(grid)
+			state.recreateLyricsBasedOnGrid(grid)
 			return self.__generate_seeds(state)
 		else:
 			state = SongState(self.genre)
 			state.lyrics = self.startLyrics
+			grid = self.generatePOSGridFromLyrics(self.startLyrics)
+			state.setPartOfSpeechGrid(grid)
 			#print state.lyrics
 			return state
+
+	def generatePOSGridFromLyrics(self,startLyrics):
+		grid = []
+		for line in startLyrics:
+			sentence = " ".join(line)
+			pos_sentence = self.tagger.tagSentence(sentence)
+			if len(pos_sentence) != len(line):
+				print "THIS WILL  CRASH!"
+			pos_line = [tup[1] for tup in pos_sentence]
+			grid.append(pos_line)
+		return grid
 
 	def __get_next_blanks(self, state):
 		linePosArr = []
@@ -286,8 +300,6 @@ class SongWriter():
 				currPos = currGridLine[p]
 				if currPos in partsOfSpeech:
 					ct += 1
-			else:
-				print "word - %s - not in words " % word
 			
 		points = 20000 * ct / total
 		return 20000 - points
@@ -590,7 +602,6 @@ class SongWriter():
 			else:
 				possibleWords = self.__get_possible_words3(state, lineNum, linePos)
 			assignments.append((linePos, possibleWords))
-			
 
 		combinations = self.getRandomCombinations(assignments)
 		
@@ -600,7 +611,6 @@ class SongWriter():
 			combinations = combinations[0:5]
 		#print combinations
 		
-
 		# final = []
 
 		# for i in range(len(combinations)):
@@ -622,6 +632,8 @@ class SongWriter():
 			totalPossible *= l if l > 0 else 1
 		numSamples = min(100,int(totalPossible * 0.4))
 
+		if numSamples == 0:
+			numSamples = 1
 		#print "getting %i samples!" % numSamples
 		combinations = []
 		for i in range(numSamples):
@@ -680,13 +692,19 @@ class SongWriter():
 
 		assignments = self.__get_possible_assignments(state)
 		for assignment in assignments:
+			#print "in assignments"
 			next_state = deepcopy(state)
+			#print "just got next state"
 			for lineNum in range(len(state.lyrics)): # assign next blank for each of the V a new word
+				#print "iterating through lyrics"
 				line_pos,next_word = assignment[lineNum]
+				#print "line_pos: %s | next_word: %s" %(line_pos,next_word)
 				if line_pos >= len(next_state.lyrics[lineNum]) or line_pos is None:
 					continue
+				#print "setting next word in lyrics to next word: %s" % next_word
 				next_state.lyrics[lineNum][line_pos] = next_word
 			cost = self.__calculate_cost(state, assignment)
+			#print "cost: %s... Appending new assignment to state" % cost
 			successors.append((assignment, next_state, cost))
 
 		successors.sort(key=lambda tup: tup[2])  # sorts in place
