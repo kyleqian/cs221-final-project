@@ -3,9 +3,9 @@ import songwriter
 import search
 import random
 import os
+import json
 from datetime import datetime
 
-## TODO: STANDARDIZE AND STEM CORPUS
 class TaylorTester():
 	def __init__(self, ucs):
 		self.NUM_SAMPLES = 3
@@ -65,14 +65,20 @@ class TaylorTester():
 		print 'Score: %f%%' % score
 
 	def __read_lyrics(self):
-		curr_song = ''
-		for l in open('taylor-lyrics.txt', 'r'):
-			line = l.strip().split()
-			if len(line) > 0:
-				if line[0] == '###':
-					curr_song = ' '.join(line[1:])
-				else:
-					self.taylor_lyrics[curr_song].append(line)
+		with open('stripped_taylor.json', 'r') as f:
+			lyrics = json.loads(f.read())
+			for song in lyrics:
+				for line in lyrics[song]:
+					self.taylor_lyrics[song].append(line.split())
+
+		# curr_song = ''
+		# for l in open('taylor-lyrics.txt', 'r'):
+		# 	line = l.strip().split()
+		# 	if len(line) > 0:
+		# 		if line[0] == '###':
+		# 			curr_song = ' '.join(line[1:])
+		# 		else:
+		# 			self.taylor_lyrics[curr_song].append(line)
 
 	def __generate_unfilled_songs(self):
 		if not self.TRUE_RANDOM: random.seed(42)
